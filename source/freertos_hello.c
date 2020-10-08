@@ -44,16 +44,23 @@
 #include "board.h"
 
 #include "pin_mux.h"
+
+#include "board_dsi.h"
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
 
-/* Task priorities. */
-#define hello_task_PRIORITY (configMAX_PRIORITIES - 1)
+typedef struct
+{
+    board_ledId_enum idLed;
+    uint32_t semiPeriodo;
+}paramBlinkLed_t;
+
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
-static void hello_task(void *pvParameters);
+static void blinky_task(void *pvParameters);
 
 /*******************************************************************************
  * Code
@@ -61,32 +68,63 @@ static void hello_task(void *pvParameters);
 /*!
  * @brief Application entry point.
  */
+
+static const paramBlinkLed_t paramBlinkLed_rojo =
+{
+    .idLed = BOARD_LED_ID_ROJO,
+    .semiPeriodo = 500,
+};
+
+static const paramBlinkLed_t paramBlinkLed_verde =
+{
+    .idLed = BOARD_LED_ID_VERDE,
+    .semiPeriodo = 400,
+};
+
 int main(void)
 {
     /* Init board hardware. */
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
-    if (xTaskCreate(hello_task, "Hello_task", configMINIMAL_STACK_SIZE + 10, NULL, hello_task_PRIORITY, NULL) != pdPASS)
-    {
-        PRINTF("Task creation failed!.\r\n");
-        while (1)
-            ;
-    }
+
+    board_init();
+
+    xTaskCreate(blinky_task, "blinkR", 100, (void * const)&paramBlinkLed_rojo, 1, NULL);
+    xTaskCreate(blinky_task, "blinkV", 100, (void * const)&paramBlinkLed_verde, 1, NULL);
+
     vTaskStartScheduler();
-    for (;;)
-        ;
+
+    for (;;);
 }
 
 /*!
  * @brief Task responsible for printing of "Hello world." message.
  */
-static void hello_task(void *pvParameters)
+static void blinky_task(void *pvParameters)
 {
+    paramBlinkLed_t *paramBlinkLed;
+
+    paramBlinkLed = (paramBlinkLed_t*)pvParameters;
+
     for (;;)
     {
-        PRINTF("Hello world.\r\n");
+        board_setLed(paramBlinkLed->idLed, BOARD_LED_MSG_TOGGLE);
 
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(paramBlinkLed->semiPeriodo / portTICK_PERIOD_MS);
     }
 }
+
+extern void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
+{
+    while(1);
+}
+
+
+
+
+
+
+
+
+
