@@ -90,3 +90,9 @@ static void hello_task(void *pvParameters)
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
+
+extern void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
+{
+    while(1);
+}
+
